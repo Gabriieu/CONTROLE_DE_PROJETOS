@@ -43,3 +43,12 @@ export type tTechnologies = {
     id: number
     name: string
 }
+
+export interface iProjectTechnologies {
+    id: number
+    addedIn: Date
+    technologyId: number
+    projectId: number
+}
+
+export type tProjectTechnologiesRequest = Omit<iProjectTechnologies, "id">

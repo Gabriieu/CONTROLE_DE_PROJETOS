@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject, tDeveloperRegisterRequest, tProjectPostRequest, tTechnologies } from "./interfaces";
+import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject, iProjectTechnologies, tDeveloperRegisterRequest, tProjectPostRequest, tProjectTechnologiesRequest, tTechnologies } from "./interfaces";
 import format from "pg-format";
 import { QueryConfig, QueryResult } from "pg";
 import { client } from "./database";
@@ -201,6 +201,66 @@ export const deleteProject = async (request: Request, response: Response): Promi
     return response.status(204).send()
 }
 export const postTechnologieInAProject = async (request: Request, response: Response): Promise<Response> => {
+
+    const projectId: number = Number(request.params.id)
+    const techId: number = response.locals.techId
+    const today: Date = new Date()
+    const data: tProjectTechnologiesRequest = {
+        addedIn: today,
+        projectId: projectId,
+        technologyId: techId
+    }
+    
+    const queryString: string = format(`
+        INSERT INTO
+            projects_technologies (%I)
+        VALUES
+            (%L);
+    `,
+    Object.keys(data),
+    Object.values(data)
+    )
+
+    await client.query(queryString)
+    
+    const queryStringReturn: string = `
+        SELECT
+            pt."technologyId",
+            t.name "technologyName",
+            p.id "projectId",
+            p.name "projectName",
+            p.description "projectDescription",
+            p."estimatedTime" "projectEstimatedTime",
+            p.repository "projectRepository",
+            p."startDate" "projectStartDate",
+            p."endDate" "projectEndDate"
+        FROM
+            projects p
+        FULL JOIN
+            projects_technologies pt ON p.id = pt."projectId"
+        FULL join 
+        	technologies t on pt."technologyId" = t.id 
+        WHERE
+            p.id = $1
+    `
+
+    const queryConfigReturn: QueryConfig = {
+        text: queryStringReturn,
+        values: [projectId]
+    }
+
+    const queryResultReturn: QueryResult = await client.query(queryConfigReturn)
+
+
+    return response.status(201).json(queryResultReturn.rows[0])
+}
+
+export const deleteProjectsTechnologies = async (request: Request, response: Response): Promise<Response> => {
+
+    const projectId: number = Number(request.params.projectId)
+    const techName: string = request.params.techId
+
+    console.log(projectId)
 
     return response
 }

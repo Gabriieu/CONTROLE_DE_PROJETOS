@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { QueryResult } from "pg";
-import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject } from "./interfaces";
+import { QueryConfig, QueryResult } from "pg";
+import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject, iProjectTechnologies } from "./interfaces";
 import { client } from "./database";
 
 export const ensureEmailDoesNotExist = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
@@ -123,11 +123,11 @@ export const ensureProjectIdExists = async (request: Request, response: Response
 
     const queryString: string = `
         SELECT
-            p.id "ProjectId",
-            p.name "ProjectName",
-            p.description "ProjectDescription",
+            p."id" "projectId",
+            p."name" "projectName",
+            p."description" "projectDescription",
             p."estimatedTime" "projectEstimatedTime",
-            p.repository "projectRepository",
+            p."repository" "projectRepository",
             p."startDate" "projectStartDate",
             p."endDate" "projectEndDate",
             p."developerId" "projectDeveloperId",
@@ -137,7 +137,7 @@ export const ensureProjectIdExists = async (request: Request, response: Response
             projects p
         FULL JOIN
             projects_technologies pt ON pt."projectId" = p.id
-        LEFT JOIN
+        FULL JOIN
             technologies t ON t.id = pt."technologyId"
         WHERE
             p.id = $1;
@@ -146,9 +146,63 @@ export const ensureProjectIdExists = async (request: Request, response: Response
     const queryResult: QueryResult<iProject> = await client.query(queryString, [projectId])
 
     if(queryResult.rowCount > 0){
-        response.locals.project = queryResult.rows[0]
+        response.locals.project = queryResult.rows
         return next()
     }
 
     return response.status(404).json({message: 'Project not found.'})
+}
+
+export const getTechId = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
+
+    const techList = ['JavaScript','Python','React','Express.js','HTML','CSS','Django','PostgreSQL', 'MongoDB']
+    const tech: string = request.body.name
+    
+    const queryString: string = `
+        SELECT
+            t.id
+        FROM
+            technologies t
+        WHERE
+            name = $1;
+    `
+
+    const queryResult: QueryResult = await client.query(queryString, [tech])
+
+    if(queryResult.rowCount === 0){
+        return response.status(400).json({
+            message: 'Technology not supported.',
+            options: techList
+        })
+    }
+
+    response.locals.techId = queryResult.rows[0].id
+
+    return next()
+}
+
+export const checkTechIdAndProjectId = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
+
+    const techId: number = response.locals.techId
+    const projectId: number = Number(request.params.id)
+
+    const queryString: string = `
+        SELECT 
+            *
+        FROM
+            projects_technologies
+        WHERE "technologyId" = $1 AND "projectId" = $2; 
+    `
+    const queryConfig: QueryConfig = {
+        text: queryString,
+        values: [techId, projectId]
+    }
+
+    const queryResult: QueryResult<iProjectTechnologies> = await client.query(queryConfig)
+
+    if(queryResult.rowCount > 0){
+        return response.status(409).json({message: `${request.body.name} technology is already associated with the project`})
+    }
+
+    return next()
 }
