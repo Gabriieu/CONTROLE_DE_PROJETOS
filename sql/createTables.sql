@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS projects (
     "repository" VARCHAR(120) NOT NULL,
     "startDate" DATE NOT NULL,
     "endDate" DATE,
-    "developerId" INTEGER NOT NULL,
+    "developerId" INTEGER,
     FOREIGN KEY ("developerId") REFERENCES developers("id") ON DELETE SET NULL
 );
 
@@ -47,8 +47,8 @@ VALUES
 CREATE TABLE IF NOT EXISTS projects_technologies (
     "id" SERIAL PRIMARY KEY,
     "addedIn" DATE NOT NULL,
-    "technologyId" INTEGER NOT NULL,
-    FOREIGN KEY ("technologieId") REFERENCES technologies("id") ON DELETE CASCADE
-    "projectId" INTEGER NOT NULL,
+    "technologyId" INTEGER ,
+    "projectId" INTEGER ,
+    FOREIGN KEY ("technologyId") REFERENCES technologies("id") ON DELETE cascade,
     FOREIGN KEY ("projectId") REFERENCES projects("id") ON DELETE CASCADE
-)
+);

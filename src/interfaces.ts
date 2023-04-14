@@ -38,3 +38,8 @@ export interface iProject {
 }
 
 export type tProjectPostRequest = Omit<iProject, "id">
+
+export type tTechnologies = {
+    id: number
+    name: string
+}

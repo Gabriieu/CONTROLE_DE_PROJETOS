@@ -123,11 +123,24 @@ export const ensureProjectIdExists = async (request: Request, response: Response
 
     const queryString: string = `
         SELECT
-            *
+            p.id "ProjectId",
+            p.name "ProjectName",
+            p.description "ProjectDescription",
+            p."estimatedTime" "projectEstimatedTime",
+            p.repository "projectRepository",
+            p."startDate" "projectStartDate",
+            p."endDate" "projectEndDate",
+            p."developerId" "projectDeveloperId",
+            t.id "technologyId",
+            t.name "technologyName"
         FROM
-            projects
+            projects p
+        FULL JOIN
+            projects_technologies pt ON pt."projectId" = p.id
+        LEFT JOIN
+            technologies t ON t.id = pt."technologyId"
         WHERE
-            id = $1;
+            p.id = $1;
     `
 
     const queryResult: QueryResult<iProject> = await client.query(queryString, [projectId])

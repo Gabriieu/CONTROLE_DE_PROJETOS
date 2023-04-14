@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject, tDeveloperRegisterRequest, tProjectPostRequest } from "./interfaces";
+import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject, tDeveloperRegisterRequest, tProjectPostRequest, tTechnologies } from "./interfaces";
 import format from "pg-format";
 import { QueryConfig, QueryResult } from "pg";
 import { client } from "./database";
@@ -153,4 +153,54 @@ export const getProject = async (request: Request, response: Response): Promise<
     const project: iProject = response.locals.project
 
     return response.status(200).json(project)
+}
+
+export const updateProject = async (request: Request, response: Response): Promise<Response> => {
+
+    const data: tProjectPostRequest = request.body
+    const projectId: number = Number(request.params.id)
+    console.log(data)
+    console.log(projectId)
+
+    const queryString: string = format(`
+        UPDATE
+            projects
+        SET
+            (%I) = ROW(%L)
+        WHERE
+            id = $1
+        RETURNING *;
+    `,
+    Object.keys(data),
+    Object.values(data)
+    )
+
+    const queryConfig: QueryConfig = {
+        text: queryString,
+        values: [projectId]
+    }
+
+    const queryResult: QueryResult<iProject> = await client.query(queryConfig)
+
+    return response.status(200).json(queryResult.rows[0])
+}
+
+export const deleteProject = async (request: Request, response: Response): Promise<Response> => {
+
+    const id: number = Number(request.params.id)
+
+    const queryString: string = `
+        DELETE FROM
+            projects
+        WHERE
+            id = $1
+    `
+
+    await client.query(queryString, [id])
+
+    return response.status(204).send()
+}
+export const postTechnologieInAProject = async (request: Request, response: Response): Promise<Response> => {
+
+    return response
 }
