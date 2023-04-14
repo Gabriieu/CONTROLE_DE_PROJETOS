@@ -257,10 +257,19 @@ export const postTechnologieInAProject = async (request: Request, response: Resp
 
 export const deleteProjectsTechnologies = async (request: Request, response: Response): Promise<Response> => {
 
+    
     const projectId: number = Number(request.params.projectId)
-    const techName: string = request.params.techId
+    const techId = response.locals.techId
 
-    console.log(projectId)
+    const queryString: string = `
+        DELETE FROM
+            projects_technologies pt
+        WHERE
+            pt."projectId" = $1 AND pt."technologyId" = $2;
+    `
 
-    return response
+    const queryResult: QueryResult = await client.query(queryString, [projectId, techId])
+    console.log(queryResult.rows)
+
+    return response.status(204).send()
 }

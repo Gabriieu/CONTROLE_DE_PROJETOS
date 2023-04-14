@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response, request } from "express";
 import { QueryConfig, QueryResult } from "pg";
 import { iDeveloper, iDeveloperGetResult, iDeveloperInfo, iDeveloperInfoRequest, iProject, iProjectTechnologies } from "./interfaces";
 import { client } from "./database";
@@ -153,7 +153,7 @@ export const ensureProjectIdExists = async (request: Request, response: Response
     return response.status(404).json({message: 'Project not found.'})
 }
 
-export const getTechId = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
+export const getTechIdBody = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
 
     const techList = ['JavaScript','Python','React','Express.js','HTML','CSS','Django','PostgreSQL', 'MongoDB']
     const tech: string = request.body.name
@@ -202,6 +202,58 @@ export const checkTechIdAndProjectId = async (request: Request, response: Respon
 
     if(queryResult.rowCount > 0){
         return response.status(409).json({message: `${request.body.name} technology is already associated with the project`})
+    }
+
+    return next()
+}
+
+export const getTechIdParams = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
+
+    const techList = ['JavaScript','Python','React','Express.js','HTML','CSS','Django','PostgreSQL', 'MongoDB']
+    const techName: string = request.params.techName
+
+    const queryString: string = `
+        SELECT
+            t.id
+        FROM
+            technologies t
+        WHERE
+            t."name" = $1
+    `
+
+    const queryResult: QueryResult = await client.query(queryString, [techName])
+
+    console.log(queryResult.rows[0])
+    if(queryResult.rowCount === 0){
+        return response.status(400).json({
+            message: 'Technology not supported.',
+            options: techList
+        })
+    }
+
+    response.locals.techId = queryResult.rows[0].id
+
+    return next()
+}
+
+export const ensureTechIsInTheProject = async (request: Request, response: Response, next: NextFunction): Promise<Response | void> => {
+
+    const techId = response.locals.techId
+    const projectId: number = Number(request.params.id)
+
+    const queryString: string = `
+        SELECT
+            *
+        FROM
+            projects_technologies pt
+        WHERE
+            pt."technologyId" = $1 AND pt."projectId" = $2;
+    `
+
+    const queryResult: QueryResult = await client.query(queryString, [techId, projectId])
+
+    if(queryResult.rowCount === 0){
+        return response.status(400).json({message: 'Technology not related to the project.'})
     }
 
     return next()

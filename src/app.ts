@@ -1,6 +1,6 @@
 import express, { Application } from "express";
 import "dotenv/config";
-import { checkOSList, checkTechIdAndProjectId, ensureDeveloperIdExists, ensureDeveloperInfoDoesNotExist, ensureEmailDoesNotExist, ensureIdExists, ensureProjectIdExists, getTechId } from "./middlewares";
+import { checkOSList, checkTechIdAndProjectId, ensureDeveloperIdExists, ensureDeveloperInfoDoesNotExist, ensureEmailDoesNotExist, ensureIdExists, ensureProjectIdExists, ensureTechIsInTheProject, getTechIdBody, getTechIdParams } from "./middlewares";
 import { deleteDeveloper, deleteProject, developerRegister, getDeveloper, getProject, postDeveloperInfo, postProject, postTechnologieInAProject, updateNameEmail, updateProject } from "./logics";
 
 const app: Application = express();
@@ -18,7 +18,7 @@ app.post('/projects', ensureDeveloperIdExists, postProject)
 app.get('/projects/:id', ensureProjectIdExists, getProject)
 app.patch('/projects/:id', ensureProjectIdExists, ensureDeveloperIdExists, updateProject)
 app.delete('/projects/:id', ensureProjectIdExists, deleteProject)
-app.post('/projects/:id/technologies', ensureProjectIdExists, getTechId, checkTechIdAndProjectId, postTechnologieInAProject)
-app.delete('/projects/:projectId/technologies/:techId', ensureProjectIdExists, deleteProject)
+app.post('/projects/:id/technologies', ensureProjectIdExists, getTechIdBody, checkTechIdAndProjectId, postTechnologieInAProject)
+app.delete('/projects/:id/technologies/:techName', ensureProjectIdExists, getTechIdParams, ensureTechIsInTheProject, deleteProject)
 
 export default app;
